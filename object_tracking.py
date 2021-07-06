@@ -1,7 +1,4 @@
 import airsim
-
-# requires Python 3.5.3 :: Anaconda 4.4.0
-# pip install opencv-python
 import cv2
 import time
 import sys
@@ -63,17 +60,12 @@ startTime=time.time()
 fps = 0
 
 while True:
-    # because this method returns std::vector<uint8>, msgpack decides to encode it as a string unfortunately.
     rawImage = client.simGetImage("0", cameraTypeMap[cameraType])
     if (rawImage == None):
         print("Camera is not returning image, please check airsim for error messages")
         sys.exit(0)
     else:
         frame = cv2.imdecode(airsim.string_to_uint8_array(rawImage), cv2.IMREAD_UNCHANGED)
-        # cv2.putText(png,'FPS ' + str(fps),textOrg, fontFace, fontScale,(255,0,255),thickness)
-        # cv2.imshow("Depth", png)
-
-        # frame = imutils.resize(png, width=600)
         (success, boxes) = trackers.update(frame)
 
 
@@ -83,32 +75,14 @@ while True:
 
         cv2.imshow("Frame", frame)
         key = cv2.waitKey(1) & 0xFF
-        # if the 's' key is selected, we are going to "select" a bounding
-        # box to track
+
         if key == ord("b"):
-          # select the bounding box of the object we want to track (make
-          # sure you press ENTER or SPACE after selecting the ROI)
+
           box = cv2.selectROI("Frame", frame, fromCenter=False,
             showCrosshair=True)
-          # create a new object tracker for the bounding box and add it
-          # to our multi-object tracker
+
           tracker = OPENCV_OBJECT_TRACKERS["medianflow"]()
           trackers.add(tracker, frame, box)
 
-              # if the `q` key was pressed, break from the loop
         elif key == ord("q"):
           break
-
-
-
-    # frameCount  = frameCount  + 1
-    # endTime=time.time()
-    # diff = endTime - startTime
-    # if (diff > 1):
-    #     fps = frameCount
-    #     frameCount = 0
-    #     startTime = endTime
-
-    # key = cv2.waitKey(1) & 0xFF;
-    # if (key == 27 or key == ord('q') or key == ord('x')):
-    #     break;
