@@ -2,14 +2,26 @@ import airsim
 import cv2
 import time
 import sys
-from pynput.keyboard import Key, Controller
-keyboard = Controller()
+from keyboard import DroneController
 
 
 
 
 from imutils.video import VideoStream
 import imutils
+
+error = {
+"y_error": 0
+}
+
+box = []
+
+control_params = {
+    "k" :1
+}
+
+def control():
+    duration  = control_params['k']*error["y_error"]
 
 OPENCV_OBJECT_TRACKERS = {
 	"csrt": cv2.TrackerCSRT_create,
@@ -22,21 +34,7 @@ OPENCV_OBJECT_TRACKERS = {
 }
 trackers = cv2.MultiTracker_create()
 
-def control(yb,yc):
-  if(yb>yc):
-    start = time.time()
-    while(time.time()-start < .2):
-        keyboard.press("w")
-        keyboard.release("w")
-        print("w")
 
-
-  if(yb<yc):
-    start = time.time()
-    while(time.time()-start < .2):
-        keyboard.press("s")
-        keyboard.release("s")
-        print("s")
 
 
 
@@ -96,7 +94,6 @@ while True:
             (x, y, w, h) = [int(v) for v in box]
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             print(box)
-            control(y+h/2,300)
 
 
         cv2.imshow("Frame", frame)
