@@ -7,6 +7,7 @@ locations = []
 import pickle as pkl
 import threading
 import cv2
+import math
 # from plot import plotting
 import object
 from PIL import Image as im
@@ -97,6 +98,12 @@ class DroneController:
         self.img_client.armDisarm(True)
         self.img_client.takeoffAsync().join()
 
+        self.cam_client = airsim.MultirotorClient()
+        self.cam_client.confirmConnection()
+        self.cam_client.enableApiControl(True)
+        self.cam_client.armDisarm(True)
+        self.cam_client.takeoffAsync().join()
+
         self.t1 = threading.Thread(target= self.controller)
         self.t2 = threading.Thread(target= self.image_processing)
 
@@ -106,12 +113,25 @@ class DroneController:
 
         self.circling = False
 
-        self.side_velocity = 0.5
+        self.side_velocity = 2
 
         self.trackers = cv2.MultiTracker_create()
 
+        self.camera_angle = 0
+
+        camera_pose = airsim.Pose(airsim.Vector3r(0, 0, 0), airsim.to_quaternion(math.radians(-30), 0, 0)) #radians
+        self.cam_client.simSetCameraPose("0", camera_pose)
+
+        pose1 = self.cam_client.simGetObjectPose("OrangeBall")
+        print(pose1)
 
 
+
+
+    def camera_control(self):
+        self.camera_angle += 1
+        camera_pose = airsim.Pose(airsim.Vector3r(0, 0, 0), airsim.to_quaternion(math.radians(self.camera_angle), 0, 0)) #radians
+        self.cam_client.simSetCameraPose("3", camera_pose)
 
     def controller(self):
         while(self.thread_start):
@@ -137,21 +157,7 @@ class DroneController:
                     desired_vel += self.side_velocity*left_direction
 
                 desired_vel = np.clip(desired_vel,-8,+8)
-                # hidden code
-                    # if(self.error["y_error"]>0):
-                    #     # desired_vel[2] = -4*self.error["y_error"]/72
-                    #     desired_vel[2] = self.control_params["kpy"]*self.error["y_error"]
-                    # if(self.error["y_error"]<0):
-                    #     # desired_vel[2] = -1*4*self.error["y_error"]/72
-                    # if(self.error["x_error"]>0):
-                    #     # desired_vel[1] = -8*self.error["x_error"]/128
-                    #     yaw_rate = -90*self.error["x_error"]/128
-                    # if(self.error["x_error"]<0):
-                    #     # desired_vel[1] = -8*self.error["x_error"]/128
-                    #     yaw_rate = -90*self.error["x_error"]/128
 
-                    # if(self.error["area_error"]>0):
-                    #     desired_vel += 8*self.error["area_error"]/(72*128*2)*forward_direction
                 self.control_client.moveByVelocityAsync(desired_vel[0], desired_vel[1], desired_vel[2], self.duration,
                 drivetrain=airsim.DrivetrainType.ForwardOnly,yaw_mode=airsim.YawMode(True, yaw_rate))
                 time.sleep(0.01)
@@ -179,7 +185,7 @@ class DroneController:
 
     def image_processing(self):
         while(True):
-                rawImage = self.img_client.simGetImage("3", airsim.ImageType.Scene)
+                rawImage = self.img_client.simGetImage("0", airsim.ImageType.Scene)
                 if (rawImage == None):
                     print("Camera is not returning image, please check airsim for error messages")
                 else:
@@ -194,9 +200,9 @@ class DroneController:
                 for box in boxes:
                     (x, y, w, h) = [int(v) for v in box]
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    self.error["y_error"] = 72 - y - h/2
+                    self.error["y_error"] = 110 - y - h/2
                     self.error["x_error"] = 128 - x - w/2
-                    self.error["area_error"] = 72*128/4 - w*h
+                    self.error["area_error"] = 72*128/2 - w*h
 
                     error_list.append([self.error["y_error"],self.error["x_error"],self.error["area_error"]])
 
@@ -218,7 +224,7 @@ class DroneController:
                 if key == ord("b"):
                     box = cv2.selectROI("Frame", frame, fromCenter=False,
                         showCrosshair=True)
-                    self.tracker = OPENCV_OBJECT_TRACKERS["medianflow"]()
+                    self.tracker = OPENCV_OBJECT_TRACKERS["csrt"]()
                     # self.tracker = cv2.TrackerKCF_create()
                     self.trackers = cv2.MultiTracker_create()
                     self.trackers.add(self.tracker, frame, box)
@@ -241,6 +247,9 @@ class DroneController:
 
         if key == keyboard.KeyCode.from_char("u"):
             self.circling = True
+
+        if key == keyboard.KeyCode.from_char("p"):
+            self.camera_control()
 
         elif key == keyboard.KeyCode.from_char("x"):
             print("stop controller")
@@ -316,3 +325,4 @@ if __name__ == "__main__":
 
     with open("trajectory.pkl",'wb') as f:
         pkl.dump(locations ,f)
+
