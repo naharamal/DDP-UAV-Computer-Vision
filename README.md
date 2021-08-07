@@ -33,11 +33,9 @@ After detecting the object, with the tracking functionality we can center the ob
 
 ![DDP-UAV-Computer-Vision%20cfb8438721d2449fb7873ae4055a8fbb/WhatsApp_Image_2021-08-07_at_4.25.09_PM.jpeg](DDP-UAV-Computer-Vision%20cfb8438721d2449fb7873ae4055a8fbb/WhatsApp_Image_2021-08-07_at_4.25.09_PM.jpeg)
 
-                                                             $y_e = y_0 - y_1$
-
-                                                                          $x_e = x_0 - x_1$
-
-                                                $a_e = area_{frame} - area_{bb}$ 
+y_e = y_0 - y_1
+x_e = x_0 - x_1
+a_e = area_frame - area_bb
 
 These errors are defined and it was driven to zero using a PD control. The error in y direction is controlled by controlling the velocity in z direction of UAV. Likewise x error is controlled using yaw rate. Forward velocity is commanded to control the area error.
 
@@ -51,7 +49,7 @@ After object centering a rudimentary object pursuit algorithm was tried. If the 
 
 After object centering we can command a constant side velocity to the drone so that drone will circle around the object. We used tld tracker for this task as medianflow failed to detect object as we go around the object. Using the Yaw rate and the constant side velocity we could write the radius of the circle as
 
-$Velocity/yaw = radius$  
+Velocity/yaw = radius  
 
 From this radius measurement we could write estimate the position of the object in the world frame.
 
